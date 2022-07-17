@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const mongodb = require('mongodb');
+require('dotenv').config();
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT ||5000;
@@ -10,10 +12,7 @@ app.use(express.json());
 
 //
 //
-
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://authentication:FZOoo069jPW9a1c3@cluster0.keshe.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.keshe.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
@@ -29,8 +28,14 @@ async function run () {
             const oldUser = await userCollection.find(query).toArray();
             if(oldUser.length === 0){
                const result = await userCollection.insertOne(user);
-               res.send({status: true})
-            }
+
+               const token = jwt.sign({
+                email: email
+                },
+                'secret123'
+                )
+                res.send({status: true, user: token})
+                }
             else{
                 res.send({status: 'Email is already used.'})
             }
@@ -39,7 +44,6 @@ async function run () {
 
          app.post('/login', async(req, res)=> {
             const user = req.body;
-            console.log(user);
             const email = req.body.email;
             const password = req.body.password;
             const query = {email: email, password: password};
@@ -48,7 +52,12 @@ async function run () {
                 res.send({status: 'Email and password is not correct'})
             }
             else{
-                res.send({status: true})
+                const token = jwt.sign({
+                    email: email
+                },
+                'secret123'
+                )
+                res.send({status: true, user: token})
             }
             
          })
